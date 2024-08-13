@@ -1,42 +1,54 @@
 const asyncHandler = require('express-async-handler');
 
+const Goal = require('../models/goalModel');
+
 
 const getGoal = asyncHandler(async (req, res) => {
 
-    res.json({
-        message: "Get Goals"
-    });
+    const goals = await Goal.find()
+
+    res.json(goals);
 
 });
 
 
 const setGoal = asyncHandler(async (req, res) => {
-    console.log(req.body.name);
-    if (!req.body.name) {
+
+    if (!req.body.text) {
         res.status(400);
         throw new Error('Add a name feild');
 
     }
-    res.status(200).json({
-        message: `${req.body.name}`
-    });
+
+    const goal = await Goal.create({
+        text: req.body.text
+    })
+    res.status(200).json(goal);
 
 });
 
 const putGoal = asyncHandler(async (req, res) => {
 
-    res.json({
-        message: `Put Goals ${req.params.id}`
-    });
+
+    const data=await Goal.findById(req.params.id);
+    if(!data)
+    {
+        res.status(400).json({
+            message:"data not foiund"
+        })
+    }
+
+    const updatedData=await Goal.findByIdAndUpdate(req.params.id, req.body,{new:true});
+
+    res.json(updatedData);
 
 });
 
 const deleteGoal = asyncHandler(async (req, res) => {
 
-    res.json({
-        message: `Delete Goals ${req.params.id}`
+    const deleteData=await Goal.findByIdAndDelete(req.params.id, req.body,{new:true});
 
-    });
+    res.json(deleteData);
 
 });
 

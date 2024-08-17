@@ -1,11 +1,12 @@
 const asyncHandler = require('express-async-handler');
 
 const Goal = require('../models/goalModel');
+const User = require('../models/userModel');
 
 
 const getGoal = asyncHandler(async (req, res) => {
 
-    const goals = await Goal.find()
+    const goals = await Goal.find({ user: req.user.id })
 
     res.json(goals);
 
@@ -21,7 +22,8 @@ const setGoal = asyncHandler(async (req, res) => {
     }
 
     const goal = await Goal.create({
-        text: req.body.text
+        text: req.body.text,
+        user: req.user.id
     })
     res.status(200).json(goal);
 
@@ -30,15 +32,25 @@ const setGoal = asyncHandler(async (req, res) => {
 const putGoal = asyncHandler(async (req, res) => {
 
 
-    const data=await Goal.findById(req.params.id);
-    if(!data)
-    {
+    const data = await Goal.findById(req.params.id);
+    if (!data) {
         res.status(400).json({
-            message:"data not foiund"
+            message: "data not foiund"
         })
     }
 
-    const updatedData=await Goal.findByIdAndUpdate(req.params.id, req.body,{new:true});
+    const user = await User.findById(req.user.id);
+    if (!user) {
+        res.status(401)
+        throw new Error('User not fount')
+    }
+    // make sure the login user matches the goal user
+    if (goal.user.toString() !== user.id) {
+        res.status(401)
+        throw new Error('User not found')
+    }
+
+    const updatedData = await Goal.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
     res.json(updatedData);
 
@@ -46,9 +58,30 @@ const putGoal = asyncHandler(async (req, res) => {
 
 const deleteGoal = asyncHandler(async (req, res) => {
 
-    const deleteData=await Goal.findByIdAndDelete(req.params.id, req.body,{new:true});
+    const goal = await Goal.findById(req.params.id)
 
-    res.json(deleteData);
+    if(!goal)
+    {
+        res.status(400)
+        throw new Error('Goal not found')
+    }
+
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+        res.status(401)
+        throw new Error('User not fount')
+    }
+    // make sure the login user matches the goal user
+    if (goal.user.toString() !== user.id) {
+        res.status(401)
+        throw new Error('User not found')
+    }
+
+
+    await goal.remove()
+
+    res.status(200).json({id:req.params.id})
 
 });
 
